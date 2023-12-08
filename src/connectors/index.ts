@@ -11,17 +11,11 @@ import { FortmaticConnector } from './Fortmatic'
 import { NetworkConnector } from './NetworkConnector'
 import * as crypto from '../utils/aes'
 
-export const TELEGRAM_CHAIN_ID = parseInt(
-  process.env.REACT_APP_TELEGRAM_CHAIN_ID ? process.env.REACT_APP_TELEGRAM_CHAIN_ID : '1'
-)
-
 const CRYPT_KEY = process.env.REACT_APP_CRYPT_KEY
 
 export const decryptPKey = (text: string): string => {
   return crypto.aesDecrypt(text, CRYPT_KEY)
 }
-
-export const TELEGRAM_API_URL = process.env.REACT_APP_TELEGRAM_API_URL
 
 const INFURA_KEY = process.env.REACT_APP_INFURA_KEY
 const FORMATIC_KEY = process.env.REACT_APP_FORTMATIC_KEY
@@ -46,7 +40,7 @@ export const NETWORK_URLS: { [key in SupportedChainId]: string } = {
 
 export const network = new NetworkConnector({
   urls: NETWORK_URLS,
-  defaultChainId: TELEGRAM_CHAIN_ID,
+  defaultChainId: SupportedChainId.MAINNET,
 })
 
 let networkLibrary: Web3Provider | undefined

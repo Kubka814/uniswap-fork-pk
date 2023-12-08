@@ -27,7 +27,7 @@ const HeaderFrame = styled.div<{ showBackground: boolean }>`
   z-index: 21;
   position: relative;
   /* Background slide effect on scroll. */
-  background-image: ${({ theme }) => `linear-gradient(to bottom, transparent 50%, ${theme.bg0} 50% )}}`};
+  background-image: ${({ theme }) => `linear-gradient(to bottom, transparent 50%, #202230 50% )}}`};
   background-position: ${({ showBackground }) => (showBackground ? '0 -100%' : '0 0')};
   background-size: 100% 200%;
   box-shadow: 0px 0px 0px 1px ${({ theme, showBackground }) => (showBackground ? theme.bg2 : 'transparent;')};
@@ -193,32 +193,11 @@ export default function Header() {
 
   return (
     <HeaderFrame showBackground={scrollY > 45}>
-      <Modal isOpen={showUniBalanceModal} onDismiss={() => setShowUniBalanceModal(false)}>
-        <UniBalanceContent setShowUniBalanceModal={setShowUniBalanceModal} />
-      </Modal>
       <Title href=".">
         <IconWrapper size={48}>
           <img src={EmpireSwapIcon} alt={'Icon'} />
         </IconWrapper>
       </Title>
-      <HeaderLinks>
-        <StyledNavLink id={`swap-nav-link`} to={'/swap'}>
-          <Trans>Swap</Trans>
-        </StyledNavLink>
-        <StyledNavLink
-          id={`pool-nav-link`}
-          to={'/pool'}
-          isActive={(match, { pathname }) =>
-            Boolean(match) ||
-            pathname.startsWith('/add') ||
-            pathname.startsWith('/remove') ||
-            pathname.startsWith('/increase') ||
-            pathname.startsWith('/find')
-          }
-        >
-          <Trans>Pool</Trans>
-        </StyledNavLink>
-      </HeaderLinks>
 
       <HeaderControls>
         <HeaderElement>

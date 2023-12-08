@@ -7,8 +7,6 @@ import { useTransactionAdder } from '../state/transactions/hooks'
 import { useCurrencyBalance } from '../state/wallet/hooks'
 import { useActiveWeb3React } from './web3'
 import { useWETHContract } from './useContract'
-import { wethTelegramContract, sendTxWithPkey } from '../utils/telegram'
-import { TELEGRAM_CHAIN_ID } from 'connectors'
 
 export enum WrapType {
   NOT_APPLICABLE,
@@ -50,14 +48,8 @@ export default function useWrapCallback(
           sufficientBalance && inputAmount
             ? async () => {
               try {
-                const depositTx = wethTelegramContract.methods.deposit()
-                sendTxWithPkey(
-                  depositTx,
-                  WETH9_EXTENDED[TELEGRAM_CHAIN_ID]?.address,
-                  `0x${inputAmount.quotient.toString(16)}`,
-                  addTransaction,
-                  { summary: `Wrap ${inputAmount.toSignificant(6)} ETH to WETH` }
-                )
+                const txReceipt = await wethContract.deposit({ value: `0x${inputAmount.quotient.toString(16)}` })
+                addTransaction(txReceipt, { summary: `Wrap ${inputAmount.toSignificant(6)} MATIC to WMATIC` })
               } catch (error) {
                 console.error('Could not deposit', error)
               }
@@ -72,14 +64,8 @@ export default function useWrapCallback(
           sufficientBalance && inputAmount
             ? async () => {
               try {
-                const withdrawTx = wethTelegramContract.methods.withdraw(`0x${inputAmount.quotient.toString(16)}`)
-                sendTxWithPkey(
-                  withdrawTx,
-                  WETH9_EXTENDED[TELEGRAM_CHAIN_ID]?.address,
-                  0,
-                  addTransaction,
-                  { summary: `Unwrap ${inputAmount.toSignificant(6)} WETH to ETH` }
-                )
+                const txReceipt = await wethContract.withdraw(`0x${inputAmount.quotient.toString(16)}`)
+                addTransaction(txReceipt, { summary: `Unwrap ${inputAmount.toSignificant(6)} WMATIC to MATIC` })
               } catch (error) {
                 console.error('Could not withdraw', error)
               }

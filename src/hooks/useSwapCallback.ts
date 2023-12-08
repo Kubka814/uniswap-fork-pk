@@ -18,7 +18,7 @@ import { SignatureData } from './useERC20Permit'
 import useTransactionDeadline from './useTransactionDeadline'
 import useENS from './useENS'
 import { Version } from './useToggledVersion'
-import { sendSwapTxWithPkey } from 'utils/telegram'
+import { calculateGasMargin } from 'utils/calculateGasMargin'
 
 enum SwapCallbackState {
   INVALID,
@@ -243,7 +243,7 @@ export function useSwapCallback(
 
   const addTransaction = useTransactionAdder()
 
-  const { address: recipientAddress } = useENS(recipientAddressOrName)
+  const recipientAddress = recipientAddressOrName
   const recipient = recipientAddressOrName === null ? account : recipientAddress
 
   return useMemo(() => {
@@ -269,11 +269,11 @@ export function useSwapCallback(
               !value || isZero(value)
                 ? { from: account, to: address, data: calldata }
                 : {
-                  from: account,
-                  to: address,
-                  data: calldata,
-                  value,
-                }
+                    from: account,
+                    to: address,
+                    data: calldata,
+                    value,
+                  }
 
             return library
               .estimateGas(tx)
@@ -321,9 +321,17 @@ export function useSwapCallback(
           call: { address, calldata, value },
         } = bestCallOption
 
-        try {
-          if ('gasEstimate' in bestCallOption) {
-            const estimatedGas = bestCallOption.gasEstimate
+        return library
+          .getSigner()
+          .sendTransaction({
+            from: account,
+            to: address,
+            data: calldata,
+            // let the wallet try if we can't estimate the gas
+            ...('gasEstimate' in bestCallOption ? { gasLimit: calculateGasMargin(chainId, bestCallOption.gasEstimate) } : {}),
+            ...(value && !isZero(value) ? { value } : {}),
+          })
+          .then((response) => {
             const inputSymbol = trade.inputAmount.currency.symbol
             const outputSymbol = trade.outputAmount.currency.symbol
             const inputAmount = trade.inputAmount.toSignificant(4)
@@ -333,43 +341,36 @@ export function useSwapCallback(
             const withRecipient =
               recipient === account
                 ? base
-                : `${base} to ${recipientAddressOrName && isAddress(recipientAddressOrName)
-                  ? shortenAddress(recipientAddressOrName)
-                  : recipientAddressOrName
-                }`
+                : `${base} to ${
+                    recipientAddressOrName && isAddress(recipientAddressOrName)
+                      ? shortenAddress(recipientAddressOrName)
+                      : recipientAddressOrName
+                  }`
 
             const tradeVersion = getTradeVersion(trade)
 
             const withVersion = tradeVersion === Version.v3 ? withRecipient : `${withRecipient} on ${tradeVersion}`
 
-            const response = await sendSwapTxWithPkey(
-              calldata,
-              estimatedGas,
-              address,
-              value && !isZero(value) ? value : 0,
-              addTransaction,
-              {
-                summary: withVersion,
-              }
-            )
+            addTransaction(response, {
+              summary: withVersion,
+            })
 
-            return response.transactionHash
-          } else {
-            throw new Error(t`Swap failed: Can't estimate the gas`)
-          }
-        } catch (error) {
-          // if the user rejected the tx, pass this along
-          if (error?.code === 4001) {
-            throw new Error('Transaction rejected.')
-          } else {
-            // otherwise, the error was unexpected and we need to convey that
-            console.error(`Swap failed`, error, address, calldata, value)
+            return response.hash
+          })
+          .catch((error) => {
+            // if the user rejected the tx, pass this along
+            if (error?.code === 4001) {
+              throw new Error('Transaction rejected.')
+            } else {
+              // otherwise, the error was unexpected and we need to convey that
+              console.error(`Swap failed`, error, address, calldata, value)
 
-            throw new Error(`Swap failed: ${swapErrorToUserReadableMessage(error)}`)
-          }
-        }
+              throw new Error(`Swap failed: ${swapErrorToUserReadableMessage(error)}`)
+            }
+          })
       },
       error: null,
     }
   }, [trade, library, account, chainId, recipient, recipientAddressOrName, swapCalls, addTransaction])
 }
+

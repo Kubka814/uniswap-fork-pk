@@ -10,9 +10,9 @@ import { useWalletModalToggle } from '../../state/application/hooks'
 import { isTransactionRecent, useAllTransactions } from '../../state/transactions/hooks'
 import { TransactionDetails } from '../../state/transactions/reducer'
 import { ButtonSecondary } from '../Button'
-
+import { useHasSocks } from '../../hooks/useSocksBalance'
 import Loader from '../Loader'
-
+import { shortenAddress } from '../../utils'
 import { RowBetween } from '../Row'
 import WalletModal from '../WalletModal'
 
@@ -102,6 +102,12 @@ const NetworkIcon = styled(Activity)`
   height: 16px;
 `
 
+const SOCK = (
+  <span role="img" aria-label="has socks emoji" style={{ marginTop: -4, marginBottom: -4 }}>
+    🧦
+  </span>
+)
+
 // we want the latest one to come first, so return negative if a is after b
 function newTransactionsFirst(a: TransactionDetails, b: TransactionDetails) {
   return b.addedTime - a.addedTime
@@ -118,7 +124,7 @@ function Web3StatusInner() {
   }, [allTransactions])
 
   const pending = sortedRecentTransactions.filter((tx) => !tx.receipt).map((tx) => tx.hash)
-
+  const hasSocks = useHasSocks()
   const hasPendingTransactions = !!pending.length
   const toggleWalletModal = useWalletModalToggle()
 
@@ -133,11 +139,10 @@ function Web3StatusInner() {
             <Loader stroke="white" />
           </RowBetween>
         ) : (
-          <Text>
-            {window?.Telegram?.WebApp?.initDataUnsafe?.user?.username
-              ? `${window.Telegram.WebApp.initDataUnsafe.user.username}`
-              : 'Connect Wallet On Bot'}
-          </Text>
+          <>
+            {hasSocks ? SOCK : null}
+            <Text>{shortenAddress(account)}</Text>
+          </>
         )}
       </Web3StatusConnected>
     )

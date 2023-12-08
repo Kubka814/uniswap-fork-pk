@@ -7,12 +7,14 @@ import { ExplorerDataType, getExplorerLink } from '../../utils/getExplorerLink'
 import { AutoRow } from '../Row'
 import Copy from './Copy'
 import Transaction from './Transaction'
-
+import { ButtonSecondary } from '../Button'
 import { ReactComponent as Close } from '../../assets/images/x.svg'
 import { ExternalLink as LinkIcon } from 'react-feather'
 import { ExternalLink, LinkStyledButton, TYPE } from '../../theme'
 import { Trans } from '@lingui/macro'
 import { useAppDispatch } from 'state/hooks'
+import { SUPPORTED_WALLETS } from 'constants/wallet'
+import { injected, walletlink } from 'connectors'
 
 const HeaderRow = styled.div`
   ${({ theme }) => theme.flexRowNoWrap};
@@ -160,7 +162,17 @@ const WalletName = styled.div`
 const TransactionListWrapper = styled.div`
   ${({ theme }) => theme.flexColumnNoWrap};
 `
-
+const WalletAction = styled(ButtonSecondary)`
+  width: fit-content;
+  font-weight: 400;
+  margin-left: 8px;
+  font-size: 0.825rem;
+  padding: 4px 6px;
+  :hover {
+    cursor: pointer;
+    text-decoration: underline;
+  }
+`
 function renderTransactions(transactions: string[]) {
   return (
     <TransactionListWrapper>
@@ -176,7 +188,7 @@ interface AccountDetailsProps {
   pendingTransactions: string[]
   confirmedTransactions: string[]
   ENSName?: string
-  openOptions?: () => void
+  openOptions: () => void
 }
 
 export default function AccountDetails({
@@ -184,21 +196,22 @@ export default function AccountDetails({
   pendingTransactions,
   confirmedTransactions,
   ENSName,
+  openOptions,
 }: AccountDetailsProps) {
-  const { chainId, account } = useActiveWeb3React()
+  const { chainId, account, connector } = useActiveWeb3React()
   const theme = useContext(ThemeContext)
   const dispatch = useAppDispatch()
 
   function formatConnectorName() {
-    return (
-      <WalletName>
-        <Trans>
-          {window?.Telegram?.WebApp?.initDataUnsafe?.user?.username
-            ? `${window.Telegram.WebApp.initDataUnsafe.user.username}`
-            : 'null'}
-        </Trans>
-      </WalletName>
-    )
+    const { ethereum } = window
+    const isMetaMask = !!(ethereum && ethereum.isMetaMask)
+    const name = Object.keys(SUPPORTED_WALLETS)
+      .filter(
+        (k) =>
+          SUPPORTED_WALLETS[k].connector === connector && (connector !== injected || isMetaMask === (k === 'METAMASK'))
+      )
+      .map((k) => SUPPORTED_WALLETS[k].name)[0]
+    return <WalletName>Connected with {name}</WalletName>
   }
 
   const clearAllTransactionsCallback = useCallback(() => {
@@ -217,7 +230,29 @@ export default function AccountDetails({
         <AccountSection>
           <YourAccount>
             <InfoCard>
-              <AccountGroupingRow>{formatConnectorName()}</AccountGroupingRow>
+              <AccountGroupingRow>
+                {formatConnectorName()}
+                <div>
+                  {connector !== injected && connector !== walletlink && (
+                    <WalletAction
+                      style={{ fontSize: '.825rem', fontWeight: 400, marginRight: '8px' }}
+                      onClick={() => {
+                        ;(connector as any).close()
+                      }}
+                    >
+                      Disconnect
+                    </WalletAction>
+                  )}
+                  <WalletAction
+                    style={{ fontSize: '.825rem', fontWeight: 400 }}
+                    onClick={() => {
+                      openOptions()
+                    }}
+                  >
+                    Change
+                  </WalletAction>
+                </div>
+              </AccountGroupingRow>
               <AccountGroupingRow id="web3-account-identifier-row">
                 <AccountControl>
                   {ENSName ? <p> {ENSName}</p> : <p> {account && shortenAddress(account)}</p>}
