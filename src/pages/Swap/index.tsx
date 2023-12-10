@@ -382,7 +382,8 @@ export default function Swap({ history }: RouteComponentProps) {
                 fiatValue={fiatValueInput ?? undefined}
                 onCurrencySelect={handleInputSelect}
                 otherCurrency={currencies[Field.OUTPUT]}
-                showCommonBases={true}
+                showCommonBases={false}
+                disableNonToken={true}
                 id="swap-currency-input"
                 loading={independentField === Field.OUTPUT && routeIsSyncing}
               />
@@ -390,8 +391,8 @@ export default function Swap({ history }: RouteComponentProps) {
                 <ArrowDown
                   size="16"
                   onClick={() => {
-                    setApprovalSubmitted(false) // reset 2 step UI for approvals
-                    onSwitchTokens()
+                    // setApprovalSubmitted(false) // reset 2 step UI for approvals
+                    // onSwitchTokens()
                   }}
                   color={currencies[Field.INPUT] && currencies[Field.OUTPUT] ? theme.text1 : theme.text3}
                 />
@@ -410,6 +411,7 @@ export default function Swap({ history }: RouteComponentProps) {
                 showCommonBases={true}
                 id="swap-currency-output"
                 loading={independentField === Field.INPUT && routeIsSyncing}
+                disableSelect={true}
               />
             </div>
 
